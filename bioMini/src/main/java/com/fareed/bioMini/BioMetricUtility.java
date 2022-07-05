@@ -19,6 +19,7 @@ import com.suprema.IUsbEventHandler;
 
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Locale;
 
 public class BioMetricUtility {
@@ -49,11 +50,11 @@ public class BioMetricUtility {
                 } else if (actionType == ActionType.Enroll) {
                     actionEnroll(capturedImage,capturedTemplate);
                 } else if (actionType == ActionType.Verify) {
-                    // actionVerify();
+                    actionVerify(capturedImage,capturedTemplate);
                 } else if (actionType == ActionType.ClockIn) {
-                    //  actionClockIn();
+                    actionClockIn(capturedImage,capturedTemplate);
                 } else if (actionType == ActionType.ClockOut) {
-                    //  actionClockOut();
+                    actionClockOut(capturedImage,capturedTemplate);
                 } else if (actionType == ActionType.FetchAll) {
                     //  actionFetchAll();
                 }
@@ -67,9 +68,60 @@ public class BioMetricUtility {
         }
     };
 
+    private void actionClockOut(Bitmap capturedImage, IBioMiniDevice.TemplateData capturedTemplate) {
+        // check if already exists
+        boolean alreadyExists = isAlreadyExists(capturedTemplate, false);
+        if (alreadyExists){
+            bioMetricListener.clockOutCompleted(capturedImage,capturedTemplate);
+        }else {
+            bioMetricListener.showMessage("User is not registered");
+        }
+    }
+
+    private void actionClockIn(Bitmap capturedImage, IBioMiniDevice.TemplateData capturedTemplate) {
+        // check if already exists
+        boolean alreadyExists = isAlreadyExists(capturedTemplate, false);
+        if (alreadyExists){
+            bioMetricListener.clockInCompleted(capturedImage,capturedTemplate);
+        }else {
+            bioMetricListener.showMessage("User is not registered");
+        }
+    }
+
+    private void actionVerify(Bitmap capturedImage, IBioMiniDevice.TemplateData capturedTemplate) {
+        // check if already exists
+        boolean alreadyExists = isAlreadyExists(capturedTemplate, false);
+        if (alreadyExists){
+            bioMetricListener.showMessage("This user already enrolled");
+            bioMetricListener.verificationCompleted(capturedImage,capturedTemplate,true);
+        }else {
+            bioMetricListener.verificationCompleted(capturedImage,capturedTemplate,false);
+            bioMetricListener.showMessage("This user is unidentified");
+        }
+    }
+
     private void actionEnroll(Bitmap capturedImage, IBioMiniDevice.TemplateData capturedTemplate) {
-        dbHelper.addNewFingerPrint(capturedTemplate.data);
-        bioMetricListener.enrollCompleted(capturedImage,capturedTemplate);
+        // check if already exists
+        boolean alreadyExists = isAlreadyExists(capturedTemplate, false);
+        if (alreadyExists){
+            bioMetricListener.showMessage("This user already enrolled");
+        }else {
+            dbHelper.addNewFingerPrint(capturedTemplate.data);
+            bioMetricListener.enrollCompleted(capturedImage,capturedTemplate);
+        }
+    }
+
+    private boolean isAlreadyExists(IBioMiniDevice.TemplateData capturedTemplate, boolean alreadyExists) {
+        List<byte[]> fingerprintList = dbHelper.getAllFingerPrint();
+        for (int i = 0; i < fingerprintList.size(); i++) {
+            byte[] fp = fingerprintList.get(i);
+            if (mCurrentDevice != null) {
+                if (mCurrentDevice.verify(capturedTemplate.data, fp)) {
+                    alreadyExists = true;
+                }
+            }
+        }
+        return alreadyExists;
     }
 
     private void actionCapture(Bitmap capturedImage, IBioMiniDevice.TemplateData capturedTemplate) {
@@ -224,15 +276,33 @@ public class BioMetricUtility {
     }
 
     public void verifyFingerPrint() {
-        // Coming Soon
+        actionType = ActionType.Verify;
+        if (mCurrentDevice != null) {
+            mCurrentDevice.captureSingle(
+                    mCaptureOptionDefault,
+                    mCaptureResponseDefault,
+                    true);
+        }
     }
 
     public void clockInUser() {
-        // Coming Soon
+        actionType = ActionType.ClockIn;
+        if (mCurrentDevice != null) {
+            mCurrentDevice.captureSingle(
+                    mCaptureOptionDefault,
+                    mCaptureResponseDefault,
+                    true);
+        }
     }
 
     public void clockOutUser() {
-        // Coming Soon
+        actionType = ActionType.ClockOut;
+        if (mCurrentDevice != null) {
+            mCurrentDevice.captureSingle(
+                    mCaptureOptionDefault,
+                    mCaptureResponseDefault,
+                    true);
+        }
     }
 
     public void getUsersAttendance() {

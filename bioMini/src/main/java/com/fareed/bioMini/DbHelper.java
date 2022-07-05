@@ -2,8 +2,12 @@ package com.fareed.bioMini;
 
 import android.content.ContentValues;
 import android.content.Context;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class DbHelper extends SQLiteOpenHelper {
 
@@ -67,6 +71,21 @@ public class DbHelper extends SQLiteOpenHelper {
         // at last we are closing our
         // database after adding database.
         db.close();
+    }
+
+    public List<byte[]> getAllFingerPrint(){
+        List<byte[]> fpList = new ArrayList<>();
+        // Select All Query
+        String selectQuery = "SELECT  * FROM " + TABLE_NAME;
+        SQLiteDatabase db = this.getWritableDatabase();
+        Cursor cursor = db.rawQuery(selectQuery, null);
+        if (cursor.moveToFirst()) {
+            do {
+                byte[] fp = cursor.getBlob(1);
+                fpList.add(fp);
+            } while (cursor.moveToNext());
+        }
+        return fpList;
     }
 
     @Override
