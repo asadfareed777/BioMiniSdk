@@ -6,7 +6,7 @@ import com.suprema.IBioMiniDevice;
 
 public interface BioMetricListener {
     void captureCompleted(Bitmap capturedImage, IBioMiniDevice.TemplateData capturedTemplate);
-    void enrollCompleted();
+    void enrollCompleted(Bitmap capturedImage, IBioMiniDevice.TemplateData capturedTemplate);
     void verificationCompleted();
     void clockInCompleted();
     void clockOutCompleted();

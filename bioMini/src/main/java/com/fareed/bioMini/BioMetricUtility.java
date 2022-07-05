@@ -32,6 +32,7 @@ public class BioMetricUtility {
     private Activity mainContext;
     private ActionType actionType = null;
     private BioMetricListener bioMetricListener;
+    private DbHelper dbHelper;
     private BioMiniFactory mBioMiniFactory = null;
     private final IBioMiniDevice.CaptureOption mCaptureOptionDefault = new IBioMiniDevice.CaptureOption();
     private final CaptureResponder mCaptureResponseDefault = new CaptureResponder() {
@@ -46,7 +47,7 @@ public class BioMetricUtility {
                 if (actionType == ActionType.Capture) {
                     actionCapture(capturedImage,capturedTemplate);
                 } else if (actionType == ActionType.Enroll) {
-                    // actionEnroll();
+                    actionEnroll(capturedImage,capturedTemplate);
                 } else if (actionType == ActionType.Verify) {
                     // actionVerify();
                 } else if (actionType == ActionType.ClockIn) {
@@ -66,12 +67,18 @@ public class BioMetricUtility {
         }
     };
 
+    private void actionEnroll(Bitmap capturedImage, IBioMiniDevice.TemplateData capturedTemplate) {
+        dbHelper.addNewFingerPrint(capturedTemplate.data);
+        bioMetricListener.enrollCompleted(capturedImage,capturedTemplate);
+    }
+
     private void actionCapture(Bitmap capturedImage, IBioMiniDevice.TemplateData capturedTemplate) {
         bioMetricListener.captureCompleted(capturedImage,capturedTemplate);
     }
 
     private BioMetricUtility(Activity mainContext) {
         this.mainContext = mainContext;
+        dbHelper = new DbHelper(mainContext);
         bioMetricListener = (BioMetricListener) mainContext;
         mCaptureOptionDefault.frameRate = IBioMiniDevice.FrameRate.SHIGH;
         if (mBioMiniFactory != null) {
