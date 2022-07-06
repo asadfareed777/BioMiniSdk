@@ -30,12 +30,13 @@ public class BioMetricUtility {
     private UsbManager mUsbManager = null;
     private PendingIntent mPermissionIntent = null;
     private static final String ACTION_USB_PERMISSION = "com.android.example.USB_PERMISSION";
-    private Activity mainContext;
+    private final Activity mainContext;
     private ActionType actionType = null;
-    private BioMetricListener bioMetricListener;
-    private DbHelper dbHelper;
+    private Fingers fingerType = Fingers.LeftThumb;
+    private final BioMetricListener bioMetricListener;
+    private final DbHelper dbHelper;
     private BioMiniFactory mBioMiniFactory = null;
-    private final IBioMiniDevice.CaptureOption mCaptureOptionDefault = new IBioMiniDevice.CaptureOption();
+    private IBioMiniDevice.CaptureOption mCaptureOptionDefault = new IBioMiniDevice.CaptureOption();
     private final CaptureResponder mCaptureResponseDefault = new CaptureResponder() {
         @Override
         public boolean onCaptureEx(final Object context, final Bitmap capturedImage,
@@ -196,6 +197,136 @@ public class BioMetricUtility {
         }
     }
 
+    /**
+     *  This method set parameters like SECURITY_LEVEL,TEMPLATE_TYPE,SENSITIVITY_LEVEL,TIMEOUT,
+     *  SCANNING_MODE,FAST_MODE,ENABLE_AUTOSLEEP etc
+     *  parameter = new IBioMiniDevice.Parameter(IBioMiniDevice.ParameterType.TEMPLATE_TYPE, IBioMiniDevice.TemplateType.SUPREMA.value())
+     */
+    public void setCaptureParameter(IBioMiniDevice.Parameter parameter){
+        if (mCurrentDevice != null){
+            mCurrentDevice.setParameter(parameter);
+        }
+    }
+
+    /**
+     *  This method set TemplateType as ISO19794
+     */
+    public void setISO19794TemplateType(){
+        if (mCurrentDevice != null){
+            mCurrentDevice.setParameter(new IBioMiniDevice.Parameter(IBioMiniDevice.ParameterType.TEMPLATE_TYPE,
+                    IBioMiniDevice.TemplateType.ISO19794_2.value()));
+        }
+    }
+
+    /**
+     *  This method set TemplateType as ANSI378
+     */
+    public void setANSI378TemplateType(){
+        if (mCurrentDevice != null){
+            mCurrentDevice.setParameter(new IBioMiniDevice.Parameter(IBioMiniDevice.ParameterType.TEMPLATE_TYPE,
+                    IBioMiniDevice.TemplateType.ANSI378.value()));
+        }
+    }
+
+    /**
+     *  This method set TemplateType as SUPREMA
+     */
+    public void setSUPREMATemplateType(){
+        if (mCurrentDevice != null){
+            mCurrentDevice.setParameter(new IBioMiniDevice.Parameter(IBioMiniDevice.ParameterType.TEMPLATE_TYPE,
+                    IBioMiniDevice.TemplateType.SUPREMA.value()));
+        }
+    }
+
+    /**
+     *  This method provides device details like deviceName,deviceSN,versionSDK
+     *
+     */
+    public IBioMiniDevice.DeviceInfo getDeviceInfo(){
+        if (mCurrentDevice != null){
+            return mCurrentDevice.getDeviceInfo();
+        }
+        return null;
+    }
+
+    /**
+     *  This method changes default LeftThumb to desired finger
+     */
+    public void setBiometricFinger(Fingers finger){
+        fingerType = finger;
+    }
+
+    /**
+     *  This method returns selected finger for authentication
+     */
+    public Fingers getSelectedBiometricFinger(){
+        return fingerType;
+    }
+
+    /**
+     *  This method set data of capture option
+     * public int captureTimeout;
+     * public boolean captureImage;
+     * public boolean captureTemplate;
+     * public FrameRate frameRate;
+     */
+    public void setCaptureOptions(IBioMiniDevice.CaptureOption captureOptions){
+        this.mCaptureOptionDefault = captureOptions;
+    }
+
+    /**
+     *  This method provides Biometric Sdk information
+     */
+    public String getSdkInfo(){
+        if (mBioMiniFactory != null){
+            return mBioMiniFactory.getSDKInfo().toString();
+        }else {
+            return "Something went wrong. Please try again later";
+        }
+    }
+
+    /**
+     *  This method provides last error code
+     */
+    public IBioMiniDevice.ErrorCode getLastErrorCode(){
+        if (mCurrentDevice != null){
+            return mCurrentDevice.getLastError();
+        }else {
+            return null;
+        }
+    }
+
+    /**
+     *  This method set encryption key for template data
+     */
+    public void setEncryptionKey(byte[] data){
+        if (mCurrentDevice != null){
+            mCurrentDevice.setEncryptionKey(data);
+        }
+    }
+
+    /**
+     *  This method encrypt template data
+     */
+    public byte[] encryptData(byte[] data){
+        if (mCurrentDevice != null){
+            return mCurrentDevice.encrypt(data);
+        }else {
+            return null;
+        }
+    }
+
+    /**
+     *  This method decrypt template data
+     */
+    public byte[] decryptData(byte[] data){
+        if (mCurrentDevice != null){
+            return mCurrentDevice.decrypt(data);
+        }else {
+            return null;
+        }
+    }
+
     private final BroadcastReceiver mUsbReceiver = new BroadcastReceiver() {
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
@@ -245,6 +376,9 @@ public class BioMetricUtility {
         }
     }
 
+    /**
+     *  This method stops capturing fingerprint
+     */
     public void abortAction() {
         if (mCurrentDevice != null) {
             // Abort capturing

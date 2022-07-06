@@ -10,6 +10,7 @@ import android.widget.Toast;
 import com.bumptech.glide.Glide;
 import com.fareed.bioMini.BioMetricListener;
 import com.fareed.bioMini.BioMetricUtility;
+import com.fareed.bioMini.Fingers;
 import com.fareed.bioMini.Utils;
 import com.suprema.IBioMiniDevice;
 
@@ -30,6 +31,7 @@ public class MainActivity extends AppCompatActivity implements BioMetricListener
     private void setClickListeners() {
         // Capture just capture FP. it does not save in db
         findViewById(R.id.btn_capture).setOnClickListener(view -> {
+            bioMetricUtility.setBiometricFinger(Fingers.LeftIndex);
             bioMetricUtility.captureFingerPrint();
         });
         // Capture just capture FP and saves in local db
@@ -68,6 +70,7 @@ public class MainActivity extends AppCompatActivity implements BioMetricListener
         Toast.makeText(this, "Fingerprint Enrolled Successfully", Toast.LENGTH_SHORT).show();
         Glide.with(this).load(capturedImage).into(imageViewFingerPrint);
         // Perform Custom action here
+        bioMetricUtility.setCaptureParameter(new IBioMiniDevice.Parameter(IBioMiniDevice.ParameterType.SECURITY_LEVEL, IBioMiniDevice.TemplateType.SUPREMA.value()));
     }
 
     @Override
