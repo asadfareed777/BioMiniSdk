@@ -11,6 +11,7 @@ import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 import android.os.SystemClock;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.suprema.BioMiniFactory;
 import com.suprema.CaptureResponder;
@@ -32,8 +33,10 @@ public class BioMetricUtility {
     private static final String ACTION_USB_PERMISSION = "com.android.example.USB_PERMISSION";
     private final Activity mainContext;
     private ActionType actionType = null;
+    private CaptureImageType captureImageType = null;
     private Fingers fingerType = Fingers.LeftThumb;
     private final BioMetricListener bioMetricListener;
+    private final CustomImageListener customImageListener;
     private final DbHelper dbHelper;
     private BioMiniFactory mBioMiniFactory = null;
     private IBioMiniDevice.CaptureOption mCaptureOptionDefault = new IBioMiniDevice.CaptureOption();
@@ -69,9 +72,48 @@ public class BioMetricUtility {
         }
     };
 
+    /**
+     *  This callback handles custom capture like bmp,raw etc
+     */
+    private final CaptureResponder mCaptureResponseCustom = new CaptureResponder() {
+        @Override
+        public boolean onCaptureEx(final Object context, final Bitmap capturedImage,
+                                   final IBioMiniDevice.TemplateData capturedTemplate,
+                                   final IBioMiniDevice.FingerState fingerState) {
+            Log.i("BioMetric", "onCapture : Capture successful!");
+            //enableButton(enroll);
+            Log.i("BioMetric", ((IBioMiniDevice) context).popPerformanceLog());
+            if ((capturedImage != null)) {
+                if (captureImageType == CaptureImageType.CaptureImageAs19794) {
+                    byte[] iso = mCurrentDevice.getCaptureImageAs19794_4();
+                    customImageListener.customImageCaptureCompleted(iso,captureImageType, capturedImage, capturedTemplate);
+                } else if (captureImageType == CaptureImageType.CaptureImageAsBmp) {
+                    byte[] bmp = mCurrentDevice.getCaptureImageAsBmp();
+                    customImageListener.customImageCaptureCompleted(bmp,captureImageType, capturedImage, capturedTemplate);
+                }else if (captureImageType == CaptureImageType.CaptureImageAsRAW) {
+                    byte[] raw = mCurrentDevice.getCaptureImageAsRAW_8();
+                    customImageListener.customImageCaptureCompleted(raw,captureImageType,capturedImage,capturedTemplate);
+                }else if (captureImageType == CaptureImageType.CaptureImageAsWsq) {
+                  //  byte[] wsq = mCurrentDevice.getCaptureImageAsWsq(100,100,);
+                   // customImageListener.customImageCaptureCompleted(wsq,captureImageType,capturedImage,capturedTemplate);
+                    Toast.makeText(mainContext, "Coming soon", Toast.LENGTH_SHORT).show();
+                }
+            }
+            return true;
+        }
+
+        @Override
+        public void onCaptureError(Object contest, int errorCode, String error) {
+            Log.i("BioMetric", "onCaptureError : " + error + " ErrorCode :" + errorCode);
+        }
+    };
+
+    /**
+     *  This method is useful for check out
+     */
     private void actionClockOut(Bitmap capturedImage, IBioMiniDevice.TemplateData capturedTemplate) {
         // check if already exists
-        boolean alreadyExists = isAlreadyExists(capturedTemplate, false);
+        boolean alreadyExists = isAlreadyExists(capturedTemplate);
         if (alreadyExists){
             bioMetricListener.clockOutCompleted(capturedImage,capturedTemplate);
         }else {
@@ -79,9 +121,12 @@ public class BioMetricUtility {
         }
     }
 
+    /**
+     *  This method is useful for check in
+     */
     private void actionClockIn(Bitmap capturedImage, IBioMiniDevice.TemplateData capturedTemplate) {
         // check if already exists
-        boolean alreadyExists = isAlreadyExists(capturedTemplate, false);
+        boolean alreadyExists = isAlreadyExists(capturedTemplate);
         if (alreadyExists){
             bioMetricListener.clockInCompleted(capturedImage,capturedTemplate);
         }else {
@@ -89,9 +134,12 @@ public class BioMetricUtility {
         }
     }
 
+    /**
+     *  This method captures and verifies if user is enrolled already?
+     */
     private void actionVerify(Bitmap capturedImage, IBioMiniDevice.TemplateData capturedTemplate) {
         // check if already exists
-        boolean alreadyExists = isAlreadyExists(capturedTemplate, false);
+        boolean alreadyExists = isAlreadyExists(capturedTemplate);
         if (alreadyExists){
             bioMetricListener.showMessage("This user already enrolled");
             bioMetricListener.verificationCompleted(capturedImage,capturedTemplate,true);
@@ -101,18 +149,25 @@ public class BioMetricUtility {
         }
     }
 
+    /**
+     *  This method captures and stores fingerprint in database
+     */
     private void actionEnroll(Bitmap capturedImage, IBioMiniDevice.TemplateData capturedTemplate) {
         // check if already exists
-        boolean alreadyExists = isAlreadyExists(capturedTemplate, false);
+        boolean alreadyExists = isAlreadyExists(capturedTemplate);
         if (alreadyExists){
             bioMetricListener.showMessage("This user already enrolled");
         }else {
-            dbHelper.addNewFingerPrint(capturedTemplate.data);
+            dbHelper.addNewFingerPrint(capturedTemplate.data,fingerType.ordinal());
             bioMetricListener.enrollCompleted(capturedImage,capturedTemplate);
         }
     }
 
-    private boolean isAlreadyExists(IBioMiniDevice.TemplateData capturedTemplate, boolean alreadyExists) {
+    /**
+     *  This method checks if fingerprint already exists in local db
+     */
+    private boolean isAlreadyExists(IBioMiniDevice.TemplateData capturedTemplate) {
+        boolean alreadyExists = false;
         List<byte[]> fingerprintList = dbHelper.getAllFingerPrint();
         for (int i = 0; i < fingerprintList.size(); i++) {
             byte[] fp = fingerprintList.get(i);
@@ -133,6 +188,7 @@ public class BioMetricUtility {
         this.mainContext = mainContext;
         dbHelper = new DbHelper(mainContext);
         bioMetricListener = (BioMetricListener) mainContext;
+        customImageListener = (CustomImageListener) mainContext;
         mCaptureOptionDefault.frameRate = IBioMiniDevice.FrameRate.SHIGH;
         if (mBioMiniFactory != null) {
             mBioMiniFactory.close();
@@ -181,6 +237,9 @@ public class BioMetricUtility {
         }
     }
 
+    /**
+     *  This method checks all connected devices using usb manager
+     */
     private void checkDevice() {
         if (mUsbManager == null) return;
         Log.i("BioMetric", "checkDevice");
@@ -279,7 +338,7 @@ public class BioMetricUtility {
      */
     public String getSdkInfo(){
         if (mBioMiniFactory != null){
-            return mBioMiniFactory.getSDKInfo().toString();
+            return ""+mBioMiniFactory.getSDKInfo();
         }else {
             return "Something went wrong. Please try again later";
         }
@@ -324,6 +383,17 @@ public class BioMetricUtility {
             return mCurrentDevice.decrypt(data);
         }else {
             return null;
+        }
+    }
+
+    /**
+     *  This method checks whether device capturing or not
+     */
+    public boolean checkIsCapturing(byte[] data){
+        if (mCurrentDevice != null){
+            return mCurrentDevice.isCapturing();
+        }else {
+            return false;
         }
     }
 
@@ -388,49 +458,27 @@ public class BioMetricUtility {
         }
     }
 
-    public void captureFingerPrint() {
-        actionType = ActionType.Capture;
+    /**
+     *  This method captures custom fingerprint types like bmp,raw,iso1979,wsq(inprogress) etc
+     *  Note: This simply return capture data it does not handles db operations. You
+     *  will need handle these by yourself. Db handles default type. Good luck
+     */
+    public void captureCustomFingerPrint(CaptureImageType captureImageType) {
+        this.captureImageType = captureImageType;
         if (mCurrentDevice != null) {
-            //mCaptureOptionDefault.captureTimeout = (int)mCurrentDevice.getParameter(IBioMiniDevice.ParameterType.TIMEOUT).value;
             mCurrentDevice.captureSingle(
                     mCaptureOptionDefault,
-                    mCaptureResponseDefault,
+                    mCaptureResponseCustom,
                     true);
         }
     }
 
-    public void enrollFingerPrint() {
-        actionType = ActionType.Enroll;
-        if (mCurrentDevice != null) {
-            mCurrentDevice.captureSingle(
-                    mCaptureOptionDefault,
-                    mCaptureResponseDefault,
-                    true);
-        }
-    }
-
-    public void verifyFingerPrint() {
-        actionType = ActionType.Verify;
-        if (mCurrentDevice != null) {
-            mCurrentDevice.captureSingle(
-                    mCaptureOptionDefault,
-                    mCaptureResponseDefault,
-                    true);
-        }
-    }
-
-    public void clockInUser() {
-        actionType = ActionType.ClockIn;
-        if (mCurrentDevice != null) {
-            mCurrentDevice.captureSingle(
-                    mCaptureOptionDefault,
-                    mCaptureResponseDefault,
-                    true);
-        }
-    }
-
-    public void clockOutUser() {
-        actionType = ActionType.ClockOut;
+    /**
+     *  This method captures finger print and handles different features like
+     *  simple capture,Enrollment,Verification,Check in,Check out, etc
+     */
+    public void captureFingerPrint(ActionType actionType) {
+        this.actionType = actionType;
         if (mCurrentDevice != null) {
             mCurrentDevice.captureSingle(
                     mCaptureOptionDefault,
@@ -447,6 +495,9 @@ public class BioMetricUtility {
         // Coming Soon
     }
 
+    /**
+     *  destroy created objects acts like onDestroy() of an activity
+     */
     public void destructEverything() {
         if (mBioMiniFactory != null) {
             mBioMiniFactory.close();

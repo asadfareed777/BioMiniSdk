@@ -27,6 +27,9 @@ public class DbHelper extends SQLiteOpenHelper {
     // below variable is for our course name column
     private static final String FINGERPRINT_COL = "fingerprint";
 
+    // below variable is for our course name column
+    private static final String FINGER_COL = "finger";
+
     // creating a constructor for our database handler.
     public DbHelper(Context context) {
         super(context, DB_NAME, null, DB_VERSION);
@@ -41,6 +44,7 @@ public class DbHelper extends SQLiteOpenHelper {
         // along with their data types.
         String query = "CREATE TABLE " + TABLE_NAME + " ("
                 + ID_COL + " INTEGER PRIMARY KEY AUTOINCREMENT, "
+                + FINGER_COL + " INTEGER, "
                 + FINGERPRINT_COL + " BLOB)";
 
         // at last we are calling a exec sql
@@ -49,7 +53,7 @@ public class DbHelper extends SQLiteOpenHelper {
     }
 
     // this method is use to add new course to our sqlite database.
-    public void addNewFingerPrint(byte[] fingerprint) {
+    public void addNewFingerPrint(byte[] fingerprint,int finger) {
 
         // on below line we are creating a variable for
         // our sqlite database and calling writable method
@@ -59,6 +63,8 @@ public class DbHelper extends SQLiteOpenHelper {
         // on below line we are creating a
         // variable for content values.
         ContentValues values = new ContentValues();
+
+        values.put(FINGER_COL, finger);
 
         // on below line we are passing all values
         // along with its key and value pair.
@@ -81,7 +87,7 @@ public class DbHelper extends SQLiteOpenHelper {
         Cursor cursor = db.rawQuery(selectQuery, null);
         if (cursor.moveToFirst()) {
             do {
-                byte[] fp = cursor.getBlob(1);
+                byte[] fp = cursor.getBlob(2);
                 fpList.add(fp);
             } while (cursor.moveToNext());
         }
