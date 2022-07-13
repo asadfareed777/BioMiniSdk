@@ -26,25 +26,6 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
-
-    publishing {
-        singleVariant("release") {
-
-        }
-    }
-}
-
-afterEvaluate {
-    publishing {
-        publications {
-            release(MavenPublication) {
-                from components.release
-                groupId 'com.fareed'
-                artifactId 'libBioMini'
-                version = '1.0.0'
-            }
-        }
-    }
 }
 
 dependencies {

@@ -9,6 +9,7 @@ import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.fareed.bioMini.ActionType;
+import com.fareed.bioMini.AttendanceListener;
 import com.fareed.bioMini.BioMetricListener;
 import com.fareed.bioMini.BioMetricUtility;
 import com.fareed.bioMini.CaptureImageType;
@@ -18,7 +19,7 @@ import com.fareed.bioMini.Fingers;
 import com.fareed.bioMini.Utils;
 import com.suprema.IBioMiniDevice;
 
-public class MainActivity extends AppCompatActivity implements BioMetricListener, CustomImageListener {
+public class MainActivity extends AppCompatActivity implements BioMetricListener, CustomImageListener, AttendanceListener {
 
     private BioMetricUtility bioMetricUtility;
     private ImageView imageViewFingerPrint;

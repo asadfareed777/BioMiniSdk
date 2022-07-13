@@ -36,6 +36,7 @@ public class BioMetricUtility {
     private CaptureImageType captureImageType = null;
     private Fingers fingerType = Fingers.LeftThumb;
     private final BioMetricListener bioMetricListener;
+    private final AttendanceListener attendanceListener;
     private final CustomImageListener customImageListener;
     private final DbHelper dbHelper;
     private BioMiniFactory mBioMiniFactory = null;
@@ -115,9 +116,9 @@ public class BioMetricUtility {
         // check if already exists
         boolean alreadyExists = isAlreadyExists(capturedTemplate);
         if (alreadyExists){
-            bioMetricListener.clockOutCompleted(capturedImage,capturedTemplate);
+            attendanceListener.clockOutCompleted(capturedImage,capturedTemplate);
         }else {
-            bioMetricListener.showMessage("User is not registered");
+            attendanceListener.showMessage("User is not registered");
         }
     }
 
@@ -128,9 +129,9 @@ public class BioMetricUtility {
         // check if already exists
         boolean alreadyExists = isAlreadyExists(capturedTemplate);
         if (alreadyExists){
-            bioMetricListener.clockInCompleted(capturedImage,capturedTemplate);
+            attendanceListener.clockInCompleted(capturedImage,capturedTemplate);
         }else {
-            bioMetricListener.showMessage("User is not registered");
+            attendanceListener.showMessage("User is not registered");
         }
     }
 
@@ -188,6 +189,7 @@ public class BioMetricUtility {
         this.mainContext = mainContext;
         dbHelper = new DbHelper(mainContext);
         bioMetricListener = (BioMetricListener) mainContext;
+        attendanceListener = (AttendanceListener) mainContext;
         customImageListener = (CustomImageListener) mainContext;
         mCaptureOptionDefault.frameRate = IBioMiniDevice.FrameRate.SHIGH;
         if (mBioMiniFactory != null) {
